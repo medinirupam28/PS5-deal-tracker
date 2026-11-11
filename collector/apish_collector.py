@@ -151,10 +151,9 @@ class APISHCollector:
                 continue
 
             # Exact product ID match
-            if requested_id and requested_id.startswith(("EP", "HP")):
+            if requested_id and requested_id.startswith(("EP", "HP", "UP")):
                 if requested_id in ed["edition_id"] or requested_id in ed["store_url"]:
-                    candidates.append(ed)
-                    continue
+                    return ed
 
             # Exact edition name match if specified
             if requested_edition and requested_edition not in ("standard edition", "standard", ""):

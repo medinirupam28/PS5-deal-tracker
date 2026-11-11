@@ -78,17 +78,17 @@
     },
     {
       "name": "007 First Light",
-      "edition_name": "007 First Light",
-      "store_url": "https://store.playstation.com/en-in/concept/10006560",
-      "store_id": "EP3969-PPSA11386_00-007FIRSTLIGHT000",
+      "edition_name": "007 First Light - Deluxe Edition",
+      "store_url": "https://store.playstation.com/en-in/product/EP3969-PPSA11386_00-007FLDELUXE00000",
+      "store_id": "EP3969-PPSA11386_00-007FLDELUXE00000",
       "platform": "PS5",
       "target_price": null
     },
     {
       "name": "Marvel's Wolverine",
-      "edition_name": "Marvel’s Wolverine",
-      "store_url": "https://store.playstation.com/en-in/concept/10002861",
-      "store_id": "UP9000-PPSA03671_00-MARVELSWOLVERINE",
+      "edition_name": "Marvel’s Wolverine Digital Deluxe Edition",
+      "store_url": "https://store.playstation.com/en-in/product/UP9000-PPSA03671_00-WOLVERINEDELUXE0",
+      "store_id": "UP9000-PPSA03671_00-WOLVERINEDELUXE0",
       "platform": "PS5",
       "target_price": null
     },
@@ -118,9 +118,9 @@
     },
     {
       "name": "Red Dead Redemption 2",
-      "edition_name": "Red Dead Redemption 2",
-      "store_url": "https://store.playstation.com/en-in/concept/209441",
-      "store_id": "EP1004-CUSA08519_00-REDEMPTIONFULL02",
+      "edition_name": "Red Dead Redemption 2:  Ultimate Edition",
+      "store_url": "https://store.playstation.com/en-in/product/EP1004-CUSA08519_00-RDR2ULTMEDTNBUND",
+      "store_id": "EP1004-CUSA08519_00-RDR2ULTMEDTNBUND",
       "platform": "PS4",
       "target_price": 1499
     },
@@ -150,9 +150,9 @@
     },
     {
       "name": "Minecraft",
-      "edition_name": "Minecraft",
-      "store_url": "https://store.playstation.com/en-in/product/EP4433-CUSA00265_00-MINECRAFTPS40001",
-      "store_id": "UP4433-PPSA17221_00-MINECRAFTPS50000",
+      "edition_name": "Minecraft: Ultimate Collection",
+      "store_url": "https://store.playstation.com/en-in/product/UP4433-PPSA19639_00-MCULTIMATEBUNDLE",
+      "store_id": "UP4433-PPSA19639_00-MCULTIMATEBUNDLE",
       "platform": "PS5",
       "target_price": null
     }

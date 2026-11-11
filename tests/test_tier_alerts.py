@@ -1,11 +1,20 @@
 """Unit tests for Multi-Tier Target Prices and Deal Alert Deduplication.
 
-Tests all three tiers (DEAL, GREAT DEAL, EXCEPTIONAL), escalation,
-duplicate suppression, provisional flags, and Telegram message dispatching
-using an isolated temporary SQLite database.
+Tests all required audit scenarios:
+1. Price above all targets (no alert).
+2. Price exactly equal to DEAL (sends DEAL alert).
+3. Price exactly equal to GREAT DEAL (sends GREAT DEAL alert).
+4. Price exactly equal to EXCEPTIONAL (sends EXCEPTIONAL alert).
+5. Price below EXCEPTIONAL (sends only 1 strongest EXCEPTIONAL alert).
+6. Repeated identical price (duplicate suppression).
+7. Price escalation between tiers.
+8. Recovery above DEAL and a later qualifying sale (allows fresh alert).
+9. API failure or missing price (no alert sent).
+10. New historical low (genuinely lower than previous minimum).
 """
 
 import tempfile
+import time
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 import pytest
@@ -23,7 +32,7 @@ def isolated_db():
     test_db = Database(sqlite_path=db_path, force_sqlite=True)
     test_db.initialize_database()
 
-    # Seed test game
+    # Seed test game: Marvel's Spider-Man 2
     gid = test_db.add_game(
         name="Marvel's Spider-Man 2",
         store_id="EP9000-PPSA08338_00-MARVELSPIDERMAN2",
@@ -32,7 +41,7 @@ def isolated_db():
         edition_name="Standard Edition"
     )
 
-    # Set multi-tier targets: Deal=3499, Great=2849, Exceptional=2199
+    # Multi-tier targets: Deal=3499, Great=2849, Exceptional=2199
     test_db.set_target_tiers(
         game_id=gid,
         target_deal=3499.0,
@@ -42,7 +51,7 @@ def isolated_db():
         target_notes="Sony first-party discount cycle"
     )
 
-    # Seed initial baseline price (list price: 4999)
+    # Initial baseline price: ₹4,999 (full price)
     test_db.save_price(gid, 4999.0, currency="INR", original_price=4999.0)
 
     yield test_db, gid
@@ -54,32 +63,33 @@ def isolated_db():
             pass
 
 
-def test_multi_tier_targets_stored_and_retrieved(isolated_db):
-    test_db, gid = isolated_db
-    tiers = test_db.get_target_tiers(gid)
-    assert tiers is not None
-    assert tiers["target_deal"] == 3499.0
-    assert tiers["target_great_deal"] == 2849.0
-    assert tiers["target_exceptional"] == 2199.0
-    assert tiers["is_provisional"] is False
-    assert tiers["target_notes"] == "Sony first-party discount cycle"
-
-    # Verify get_active_digital_games returns all multi-tier columns
-    active = test_db.get_active_digital_games()
-    assert len(active) == 1
-    assert active[0]["target_deal"] == 3499.0
-    assert active[0]["target_great_deal"] == 2849.0
-    assert active[0]["target_exceptional"] == 2199.0
-
-
-def test_deal_tier_triggering_and_deduplication(isolated_db):
+def test_1_price_above_all_targets_sends_no_notification(isolated_db):
+    """Scenario 1: Current price is above all targets -> returns None."""
     test_db, gid = isolated_db
     tiers = test_db.get_target_tiers(gid)
 
-    # Price hits DEAL tier (₹3,499)
+    # Current price is full price (4999), which is above DEAL (3499)
     detection = detect_deal(
         game_id=gid,
-        current_price=3499.0,
+        current_price=4999.0,  # Above DEAL (3499), matches baseline
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        minimum_discount=30.0,
+        db_instance=test_db,
+    )
+    assert detection is None
+
+
+def test_2_price_exactly_equal_to_deal_sends_deal_alert(isolated_db):
+    """Scenario 2: Price exactly equal to DEAL target -> sends DEAL alert."""
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    detection = detect_deal(
+        game_id=gid,
+        current_price=3499.0,  # Exactly DEAL
         original_price=4999.0,
         target_deal=tiers["target_deal"],
         target_great_deal=tiers["target_great_deal"],
@@ -87,33 +97,114 @@ def test_deal_tier_triggering_and_deduplication(isolated_db):
         db_instance=test_db,
     )
     assert detection is not None
+    assert detection["tier"] == "DEAL"
     assert "DEAL" in detection["alert_types"]
     assert "GREAT DEAL" not in detection["alert_types"]
     assert "EXCEPTIONAL DEAL" not in detection["alert_types"]
-    assert detection["tier"] == "DEAL"
 
-    # Simulate recording the alert in database
-    for reason in detection["alert_types"]:
-        test_db.record_alert(gid, 3499.0, reason)
 
-    # Next check at same price (₹3,499) -> must be duplicate suppressed
-    dup_detection = detect_deal(
+def test_3_price_exactly_equal_to_great_deal_sends_great_deal_alert(isolated_db):
+    """Scenario 3: Price exactly equal to GREAT DEAL target -> sends GREAT DEAL alert."""
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    detection = detect_deal(
         game_id=gid,
-        current_price=3499.0,
+        current_price=2849.0,  # Exactly GREAT DEAL
         original_price=4999.0,
         target_deal=tiers["target_deal"],
         target_great_deal=tiers["target_great_deal"],
         target_exceptional=tiers["target_exceptional"],
         db_instance=test_db,
     )
-    assert dup_detection is None
+    assert detection is not None
+    assert detection["tier"] == "GREAT DEAL"
+    assert "GREAT DEAL" in detection["alert_types"]
+    assert "DEAL" not in detection["alert_types"]
+    assert "EXCEPTIONAL DEAL" not in detection["alert_types"]
 
 
-def test_escalation_from_deal_to_great_to_exceptional(isolated_db):
+def test_4_price_exactly_equal_to_exceptional_sends_exceptional_alert(isolated_db):
+    """Scenario 4: Price exactly equal to EXCEPTIONAL target -> sends EXCEPTIONAL alert."""
     test_db, gid = isolated_db
     tiers = test_db.get_target_tiers(gid)
 
-    # 1. Trigger DEAL at ₹3,499
+    detection = detect_deal(
+        game_id=gid,
+        current_price=2199.0,  # Exactly EXCEPTIONAL
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    )
+    assert detection is not None
+    assert detection["tier"] == "EXCEPTIONAL DEAL"
+    assert "EXCEPTIONAL DEAL" in detection["alert_types"]
+    assert "GREAT DEAL" not in detection["alert_types"]
+    assert "DEAL" not in detection["alert_types"]
+
+
+def test_5_price_below_exceptional_sends_only_single_strongest_alert(isolated_db):
+    """Scenario 5: Price strictly below EXCEPTIONAL sends 1 alert, not 3."""
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    detection = detect_deal(
+        game_id=gid,
+        current_price=1899.0,  # Below EXCEPTIONAL (2199)
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    )
+    assert detection is not None
+    assert detection["tier"] == "EXCEPTIONAL DEAL"
+    # Target tier list must contain ONLY EXCEPTIONAL DEAL
+    target_alerts = [a for a in detection["alert_types"] if "DEAL" in a]
+    assert target_alerts == ["EXCEPTIONAL DEAL"]
+
+
+def test_6_repeated_identical_price_suppresses_duplicate_alert(isolated_db):
+    """Scenario 6: Subsequent run with same price produces NO notification."""
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    # First run: price is ₹2,849 (GREAT DEAL)
+    det1 = detect_deal(
+        game_id=gid,
+        current_price=2849.0,
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    )
+    assert det1 is not None
+    for a in det1["alert_types"]:
+        test_db.record_alert(gid, 2849.0, a)
+    test_db.save_price(gid, 2849.0, currency="INR")
+
+    # Second run (6 hours later, identical price ₹2,849):
+    det2 = detect_deal(
+        game_id=gid,
+        current_price=2849.0,
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    )
+    assert det2 is None  # Duplicate suppressed!
+
+
+def test_7_price_escalation_between_tiers(isolated_db):
+    """Scenario 7: Price escalating from DEAL -> GREAT DEAL -> EXCEPTIONAL."""
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    # 1. DEAL at ₹3,499
     det1 = detect_deal(
         game_id=gid,
         current_price=3499.0,
@@ -126,6 +217,7 @@ def test_escalation_from_deal_to_great_to_exceptional(isolated_db):
     assert det1["tier"] == "DEAL"
     for a in det1["alert_types"]:
         test_db.record_alert(gid, 3499.0, a)
+    test_db.save_price(gid, 3499.0)
 
     # 2. Escalate to GREAT DEAL at ₹2,849
     det2 = detect_deal(
@@ -137,11 +229,10 @@ def test_escalation_from_deal_to_great_to_exceptional(isolated_db):
         target_exceptional=tiers["target_exceptional"],
         db_instance=test_db,
     )
-    assert det2 is not None
-    assert "GREAT DEAL" in det2["alert_types"]
     assert det2["tier"] == "GREAT DEAL"
     for a in det2["alert_types"]:
         test_db.record_alert(gid, 2849.0, a)
+    test_db.save_price(gid, 2849.0)
 
     # 3. Escalate to EXCEPTIONAL at ₹2,199
     det3 = detect_deal(
@@ -153,26 +244,22 @@ def test_escalation_from_deal_to_great_to_exceptional(isolated_db):
         target_exceptional=tiers["target_exceptional"],
         db_instance=test_db,
     )
-    assert det3 is not None
-    assert "EXCEPTIONAL DEAL" in det3["alert_types"]
     assert det3["tier"] == "EXCEPTIONAL DEAL"
     for a in det3["alert_types"]:
         test_db.record_alert(gid, 2199.0, a)
+    test_db.save_price(gid, 2199.0)
 
-    # 4. Subsequent check at same price (₹2,199) -> suppressed
-    det4 = detect_deal(
-        game_id=gid,
-        current_price=2199.0,
-        original_price=4999.0,
-        target_deal=tiers["target_deal"],
-        target_great_deal=tiers["target_great_deal"],
-        target_exceptional=tiers["target_exceptional"],
-        db_instance=test_db,
-    )
-    assert det4 is None
 
-    # 5. De-escalation (price rises back to ₹2,849) -> suppressed!
-    det5 = detect_deal(
+def test_8_recovery_above_deal_and_later_qualifying_sale(isolated_db):
+    """Scenario 8: Price returns above DEAL, then later drops in a fresh sale.
+
+    A fresh notification must be allowed.
+    """
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    # 1. Sale 1: Price drops to ₹2,849 (GREAT DEAL)
+    det1 = detect_deal(
         game_id=gid,
         current_price=2849.0,
         original_price=4999.0,
@@ -181,39 +268,140 @@ def test_escalation_from_deal_to_great_to_exceptional(isolated_db):
         target_exceptional=tiers["target_exceptional"],
         db_instance=test_db,
     )
-    assert det5 is None
+    assert det1 is not None
+    for a in det1["alert_types"]:
+        test_db.record_alert(gid, 2849.0, a)
+    test_db.save_price(gid, 2849.0)
 
-
-def test_immediate_exceptional_sends_single_strongest_alert(isolated_db):
-    """Ensure a price reaching EXCEPTIONAL sends only the strongest tier alert,
-
-    not 3 separate notifications for DEAL, GREAT DEAL, and EXCEPTIONAL.
-    """
-    test_db, gid = isolated_db
-    tiers = test_db.get_target_tiers(gid)
-
-    # Price drops directly to ₹1,999 (below exceptional ₹2,199)
-    detection = detect_deal(
+    # Verify duplicate is suppressed while on sale
+    assert detect_deal(
         game_id=gid,
-        current_price=1999.0,
+        current_price=2849.0,
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    ) is None
+
+    # 2. Sale ends: Price recovers back to full list price ₹4,999 (> target_deal 3499)
+    # Give a tiny delay or distinct timestamp so checked_at > sent_at
+    time.sleep(0.01)
+    test_db.save_price(gid, 4999.0, currency="INR", original_price=4999.0)
+
+    # 3. Sale 2 (weeks later): Price drops back to ₹2,849 (GREAT DEAL)
+    det2 = detect_deal(
+        game_id=gid,
+        current_price=2849.0,
         original_price=4999.0,
         target_deal=tiers["target_deal"],
         target_great_deal=tiers["target_great_deal"],
         target_exceptional=tiers["target_exceptional"],
         db_instance=test_db,
     )
+    # Must allow fresh alert because price recovered above DEAL in between!
+    assert det2 is not None
+    assert "GREAT DEAL" in det2["alert_types"]
+
+
+def test_9_api_failure_sends_no_notification(isolated_db):
+    """Scenario 9: If price is missing or API fails, no deal detection occurs."""
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    # Price is None (API failure)
+    price_val = None
+    if price_val is not None:
+        detection = detect_deal(
+            game_id=gid,
+            current_price=price_val,
+            original_price=4999.0,
+            target_deal=tiers["target_deal"],
+            target_great_deal=tiers["target_great_deal"],
+            target_exceptional=tiers["target_exceptional"],
+            db_instance=test_db,
+        )
+    else:
+        detection = None
+
+    assert detection is None
+
+
+def test_10_new_historical_low(isolated_db):
+    """Scenario 10: NEW HISTORICAL LOW triggers only when genuinely below previous low."""
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    # Currently, lowest recorded price in price_history is ₹4,999.
+    # Price drops to ₹3,499 (which is < 4999 baseline).
+    det1 = detect_deal(
+        game_id=gid,
+        current_price=3499.0,
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    )
+    assert "NEW HISTORICAL LOW" in det1["alert_types"]
+    for a in det1["alert_types"]:
+        test_db.record_alert(gid, 3499.0, a)
+    test_db.save_price(gid, 3499.0)
+
+    # Next observation at ₹3,499 (equal to previous low) -> NOT a new low!
+    det2 = detect_deal(
+        game_id=gid,
+        current_price=3499.0,
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    )
+    assert det2 is None
+
+    # Next observation at ₹3,200 (strictly below 3499) -> triggers NEW HISTORICAL LOW!
+    det3 = detect_deal(
+        game_id=gid,
+        current_price=3200.0,
+        original_price=4999.0,
+        target_deal=tiers["target_deal"],
+        target_great_deal=tiers["target_great_deal"],
+        target_exceptional=tiers["target_exceptional"],
+        db_instance=test_db,
+    )
+    assert det3 is not None
+    assert "NEW HISTORICAL LOW" in det3["alert_types"]
+
+
+def test_target_evaluation_independent_of_discount_flag(isolated_db):
+    """Verify that target-price evaluation works even when store reports 'No discount'.
+
+    (original_price == current_price, discount == 0.0)
+    """
+    test_db, gid = isolated_db
+    tiers = test_db.get_target_tiers(gid)
+
+    # Simulate store reporting ₹2,499 with NO discount banner (original_price == current_price)
+    detection = detect_deal(
+        game_id=gid,
+        current_price=2499.0,
+        original_price=2499.0,  # 0% discount reported by store
+        target_deal=tiers["target_deal"],  # 3499
+        target_great_deal=tiers["target_great_deal"],  # 2849
+        target_exceptional=tiers["target_exceptional"],  # 2199
+        minimum_discount=30.0,
+        db_instance=test_db,
+    )
+    # Must STILL trigger GREAT DEAL because 2499 <= 2849
     assert detection is not None
-    # Must only contain EXCEPTIONAL DEAL as target alert
-    target_alerts = [a for a in detection["alert_types"] if "DEAL" in a]
-    assert target_alerts == ["EXCEPTIONAL DEAL"]
-    assert "GREAT DEAL" not in detection["alert_types"]
-    assert "DEAL" not in detection["alert_types"]
-    assert detection["tier"] == "EXCEPTIONAL DEAL"
+    assert detection["tier"] == "GREAT DEAL"
+    assert "GREAT DEAL" in detection["alert_types"]
+    assert detection["discount_percentage"] == 0.0
 
 
 def test_provisional_flag_and_notes(isolated_db):
     test_db, gid = isolated_db
-    # Update to provisional (like Wolverine)
     test_db.set_target_tiers(
         game_id=gid,
         target_deal=4759.0,

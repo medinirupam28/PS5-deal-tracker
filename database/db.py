@@ -660,6 +660,51 @@ class Database:
         )
         return row[0] if row else None
 
+    def has_recovered_above_target(self, game_id: int, alert_type: str, threshold_price: float) -> bool:
+        """Check if any price observation since the last alert of this type was strictly above threshold_price."""
+        last_alert = self._fetchone(
+            """
+            SELECT sent_at FROM alerts
+            WHERE game_id = ? AND alert_type = ?
+            ORDER BY id DESC LIMIT 1
+            """,
+            (game_id, alert_type)
+        )
+        if not last_alert or not last_alert[0]:
+            return False
+        sent_at = last_alert[0]
+
+        # Find the price_history entry corresponding to this alerted sale
+        last_sale_ph = self._fetchone(
+            """
+            SELECT id FROM price_history
+            WHERE game_id = ? AND checked_at <= ? AND price <= ?
+            ORDER BY id DESC LIMIT 1
+            """,
+            (game_id, sent_at, threshold_price)
+        )
+        if last_sale_ph:
+            higher_obs = self._fetchone(
+                """
+                SELECT id FROM price_history
+                WHERE game_id = ? AND id > ? AND price > ?
+                LIMIT 1
+                """,
+                (game_id, last_sale_ph[0], threshold_price)
+            )
+            return bool(higher_obs)
+
+        # Fallback to timestamp comparison
+        higher_obs = self._fetchone(
+            """
+            SELECT id FROM price_history
+            WHERE game_id = ? AND checked_at > ? AND price > ?
+            LIMIT 1
+            """,
+            (game_id, sent_at, threshold_price)
+        )
+        return bool(higher_obs)
+
     def record_alert(self, game_id: int, price: float, alert_type: str):
         """Record a sent alert to prevent duplicate notifications."""
         self._execute(

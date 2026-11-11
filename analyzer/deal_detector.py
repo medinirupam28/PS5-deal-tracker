@@ -63,21 +63,29 @@ def detect_deal(
     # Check tier qualification and deduplication/escalation
     if highest_tier:
         prev_tier_alert = active_db.last_alert_price(game_id, highest_tier)
+        threshold = target_deal if target_deal is not None else target_hit_price
+        has_recovered = active_db.has_recovered_above_target(game_id, highest_tier, threshold) if prev_tier_alert is not None else False
 
-        # Check stronger tiers: if a stronger tier was already alerted at or below current price, suppress
+        # Check stronger tiers: if a stronger tier was already alerted at or below current price,
+        # suppress unless the price has since recovered above target in between (new sale cycle)
         stronger_tier_suppressed = False
         if highest_tier == "DEAL":
             prev_great = active_db.last_alert_price(game_id, "GREAT DEAL")
             prev_exc = active_db.last_alert_price(game_id, "EXCEPTIONAL DEAL")
-            if (prev_great is not None and prev_great <= current_price) or (prev_exc is not None and prev_exc <= current_price):
-                stronger_tier_suppressed = True
+            if prev_great is not None and prev_great <= current_price:
+                if not active_db.has_recovered_above_target(game_id, "GREAT DEAL", threshold):
+                    stronger_tier_suppressed = True
+            if prev_exc is not None and prev_exc <= current_price:
+                if not active_db.has_recovered_above_target(game_id, "EXCEPTIONAL DEAL", threshold):
+                    stronger_tier_suppressed = True
         elif highest_tier == "GREAT DEAL":
             prev_exc = active_db.last_alert_price(game_id, "EXCEPTIONAL DEAL")
             if prev_exc is not None and prev_exc <= current_price:
-                stronger_tier_suppressed = True
+                if not active_db.has_recovered_above_target(game_id, "EXCEPTIONAL DEAL", threshold):
+                    stronger_tier_suppressed = True
 
         if not stronger_tier_suppressed:
-            if prev_tier_alert is None or current_price < prev_tier_alert:
+            if prev_tier_alert is None or current_price < prev_tier_alert or has_recovered:
                 reasons.append(highest_tier)
 
     # Percentage discount detection

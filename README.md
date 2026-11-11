@@ -32,9 +32,14 @@ A personal, production-ready PlayStation 5 deal monitoring system for India (`en
    - **Local SQLite Fallback**: Automatic local storage (`ps5_deals.db`) with timestamped backups created in `backups/` before any schema changes or migrations.
    - Complete table and history isolation between digital and physical records.
 
-4. **Deal Detection & Telegram Alerts**:
-   - Detects target price reached, discounts (30%+ digital, 20%+ physical), and new historical lows.
-   - Duplicate alert suppression prevents repeated notification spam for the same price level.
+4. **Multi-Tier Deal Detection & Telegram Alerts**:
+   - **Multi-Tier Targets**: Monitors three realistic targets per game:
+     - `DEAL`: Realistic price worth considering.
+     - `GREAT DEAL`: Strong discount worth waiting for.
+     - `EXCEPTIONAL`: Rare, unusually low historical price.
+   - **Single Strongest Alert Rule**: If a price drops to EXCEPTIONAL, only the strongest tier alert is dispatched (never 3 duplicate alerts).
+   - **Escalation & Suppression**: Escalates when price drops into deeper tiers; horizontally suppresses identical prices and de-escalation spam.
+   - **Provisional Status Transparency**: Explicitly tags titles with limited observations or unreleased status (e.g. Marvel's Wolverine) with provisional warning badges.
    - Exponential backoff retry logic for temporary network or Telegram dispatch hiccups.
 
 5. **Cloud Automation via GitHub Actions**:

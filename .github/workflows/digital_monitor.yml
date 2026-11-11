@@ -1,0 +1,51 @@
+name: PS5 Digital Game Deal Monitor
+
+on:
+  schedule:
+    # Runs every 2 hours at minute 0
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ps5-digital-monitoring
+  cancel-in-progress: false
+
+jobs:
+  monitor-digital:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Digital Monitoring Cycle
+        env:
+          APISH_KEY: ${{ secrets.APISH_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          python main.py --once
+
+      - name: Notify Failure via Telegram
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d text="⚠️ *PS5 Digital Monitor Alert*: GitHub Actions digital deal monitoring run failed. Check repository workflow logs." \
+              -d parse_mode="Markdown"
+          fi

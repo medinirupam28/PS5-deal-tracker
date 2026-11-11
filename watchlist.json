@@ -1,0 +1,62 @@
+{
+  "region": "en-in",
+  "currency": "INR",
+  "check_interval_hours": 2,
+  "minimum_discount_percent": 30,
+  "games": [
+    {
+      "name": "Call of Duty Modern Warfare 4",
+      "store_url": "https://store.playstation.com/en-in/concept/10001130",
+      "store_id": "10001130",
+      "target_price": null
+    },
+    {
+      "name": "Red Dead Redemption 2",
+      "store_url": "https://store.playstation.com/en-in/concept/209441",
+      "store_id": "209441",
+      "target_price": null
+    },
+    {
+      "name": "Marvel's Spider-Man 2",
+      "store_url": "https://store.playstation.com/en-in/concept/10002456",
+      "store_id": "10002456",
+      "target_price": null
+    },
+    {
+      "name": "Ghost of Tsushima Director's Cut",
+      "store_url": "https://store.playstation.com/en-in/product/EP9000-PPSA03208_00-GHOSTDIRECTORPS5",
+      "store_id": "EP9000-PPSA03208_00-GHOSTDIRECTORPS5",
+      "target_price": null
+    },
+    {
+      "name": "Grand Theft Auto V",
+      "store_url": "https://store.playstation.com/en-in/product/EP1004-PPSA01721_00-GTAVCROSSGENBUND",
+      "store_id": "EP1004-PPSA01721_00-GTAVCROSSGENBUND",
+      "target_price": null
+    },
+    {
+      "name": "Black Myth Wukong Digital Deluxe",
+      "store_url": "https://store.playstation.com/en-in/product/HP6545-PPSA23226_00-GAMEDELUXE000000",
+      "store_id": "HP6545-PPSA23226_00-GAMEDELUXE000000",
+      "target_price": null
+    },
+    {
+      "name": "Gran Turismo 7",
+      "store_url": "https://store.playstation.com/en-in/product/EP9001-PPSA01316_00-GT7STD0000000PS5",
+      "store_id": "EP9001-PPSA01316_00-GT7STD0000000PS5",
+      "target_price": null
+    },
+    {
+      "name": "The Last of Us Complete",
+      "store_url": "https://store.playstation.com/en-in/product/EP9000-PPSA29488_00-0000000000000000",
+      "store_id": "EP9000-PPSA29488_00-0000000000000000",
+      "target_price": null
+    },
+    {
+      "name": "Resident Evil Remake Trilogy",
+      "store_url": "https://store.playstation.com/en-in/product/EP0102-PPSA07412_00-BHB0000000000003",
+      "store_id": "EP0102-PPSA07412_00-BHB0000000000003",
+      "target_price": null
+    }
+  ]
+}

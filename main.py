@@ -101,6 +101,11 @@ def monitor_digital_games():
                 original_price=price["original_price"],
                 target_price=game.get("target_price"),
                 minimum_discount=min_discount,
+                target_deal=game.get("target_deal"),
+                target_great_deal=game.get("target_great_deal"),
+                target_exceptional=game.get("target_exceptional"),
+                is_provisional=game.get("is_provisional", False),
+                target_notes=game.get("target_notes"),
             )
 
             print(

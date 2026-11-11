@@ -172,18 +172,19 @@ def cmd_list(args):
         print("Your digital watchlist is empty. Add a game with: py manage_watchlist.py add <store_url>")
         return 0
 
-    print(f"\n{'ID':<4} {'Title':<30} {'Edition':<25} {'Current':<10} {'Target':<10} {'Hist Low':<10} {'Status':<8} {'Last Checked':<19}")
-    print("-" * 122)
+    print(f"\n{'ID':<4} {'Title':<28} {'Current':<9} {'Deal':<8} {'Great':<8} {'Exceptional':<12} {'Hist Low':<9} {'Prov':<5} {'Status':<7}")
+    print("-" * 105)
     for g in games:
         curr = f"₹{g['current_price']:,.0f}" if g["current_price"] is not None else "Pending"
-        target = f"₹{g['target_price']:,.0f}" if g["target_price"] is not None else "None"
+        t_deal = f"₹{g['target_deal']:,.0f}" if g.get("target_deal") is not None else "-"
+        t_great = f"₹{g['target_great_deal']:,.0f}" if g.get("target_great_deal") is not None else "-"
+        t_exc = f"₹{g['target_exceptional']:,.0f}" if g.get("target_exceptional") is not None else (f"₹{g['target_price']:,.0f}" if g.get("target_price") is not None else "-")
         low = f"₹{g['historical_low']:,.0f}" if g["historical_low"] is not None else "N/A"
+        prov = "YES" if g.get("is_provisional") else "NO"
         status = "ACTIVE" if g["is_active"] else "PAUSED"
-        checked = str(g["last_checked"])[:19] if g["last_checked"] else "Never"
-        title = g["name"][:28] + ".." if len(g["name"]) > 30 else g["name"]
-        edition = (g["edition_name"] or "Standard")[:23] + ".." if len(g["edition_name"] or "") > 25 else (g["edition_name"] or "Standard")
-        print(f"{g['id']:<4} {title:<30} {edition:<25} {curr:<10} {target:<10} {low:<10} {status:<8} {checked:<19}")
-    print("-" * 122)
+        title = g["name"][:26] + ".." if len(g["name"]) > 28 else g["name"]
+        print(f"{g['id']:<4} {title:<28} {curr:<9} {t_deal:<8} {t_great:<8} {t_exc:<12} {low:<9} {prov:<5} {status:<7}")
+    print("-" * 105)
     print(f"Total: {len(games)} game(s) ({sum(1 for g in games if g['is_active'])} active, {sum(1 for g in games if not g['is_active'])} paused)\n")
     return 0
 
@@ -194,8 +195,34 @@ def cmd_target(args):
         print(f"Error: Game ID {args.id} not found in database.")
         return 1
 
+    deal_arg = getattr(args, "deal", None)
+    great_arg = getattr(args, "great", None)
+    exc_arg = getattr(args, "exceptional", None)
+    prov_arg = getattr(args, "provisional", False)
+    notes_arg = getattr(args, "notes", None)
+
+    if deal_arg is not None or great_arg is not None or exc_arg is not None:
+        db.set_target_tiers(
+            game_id=args.id,
+            target_deal=deal_arg,
+            target_great_deal=great_arg,
+            target_exceptional=exc_arg,
+            is_provisional=prov_arg,
+            target_notes=notes_arg
+        )
+        print(f"✅ Updated multi-tier targets for '{game['name']}' (ID: {args.id}):")
+        if deal_arg: print(f"   Deal: ₹{deal_arg:,.0f}")
+        if great_arg: print(f"   Great Deal: ₹{great_arg:,.0f}")
+        if exc_arg: print(f"   Exceptional: ₹{exc_arg:,.0f}")
+        return 0
+
+    price_arg = getattr(args, "price", None)
+    if not price_arg:
+        print("Error: Specify a target price or use --deal / --great / --exceptional.")
+        return 1
+
     try:
-        price = float(args.price.replace("₹", "").replace(",", ""))
+        price = float(price_arg.replace("₹", "").replace(",", ""))
     except ValueError:
         print("Error: Target price must be a valid number in INR.")
         return 1
@@ -256,6 +283,11 @@ def cmd_export(args):
                 "store_id": g["store_id"],
                 "store_url": g["store_url"],
                 "target_price": g["target_price"],
+                "target_deal": g.get("target_deal"),
+                "target_great_deal": g.get("target_great_deal"),
+                "target_exceptional": g.get("target_exceptional"),
+                "is_provisional": g.get("is_provisional", False),
+                "target_notes": g.get("target_notes"),
                 "is_active": g["is_active"],
             }
             for g in games
@@ -293,6 +325,11 @@ def cmd_import(args):
         store_url = item.get("store_url")
         edition_name = item.get("edition_name") or "Standard Edition"
         target_price = item.get("target_price")
+        target_deal = item.get("target_deal")
+        target_great_deal = item.get("target_great_deal")
+        target_exceptional = item.get("target_exceptional")
+        is_provisional = item.get("is_provisional", False)
+        target_notes = item.get("target_notes")
         is_active = item.get("is_active", True)
 
         if not store_id or not store_url:
@@ -305,7 +342,9 @@ def cmd_import(args):
             imported += 1
 
         gid = db.add_game(name, store_id, store_url, "PS5", edition_name, is_active)
-        if target_price is not None:
+        if target_deal is not None or target_great_deal is not None or target_exceptional is not None:
+            db.set_target_tiers(gid, target_deal, target_great_deal, target_exceptional, is_provisional, target_notes)
+        elif target_price is not None:
             db.set_target_price(gid, target_price)
 
     print(f"✅ Import completed: {imported} new games added, {reconnected} existing games updated/reconnected.")
@@ -479,7 +518,12 @@ def main():
 
     p_target = subparsers.add_parser("target", help="Set target price for a digital game")
     p_target.add_argument("id", type=int, help="Game ID")
-    p_target.add_argument("price", help="Target price in INR")
+    p_target.add_argument("price", nargs="?", default=None, help="Target price in INR (legacy/exceptional)")
+    p_target.add_argument("--deal", type=float, default=None, help="Deal tier price in INR")
+    p_target.add_argument("--great", type=float, default=None, help="Great deal tier price in INR")
+    p_target.add_argument("--exceptional", type=float, default=None, help="Exceptional deal tier price in INR")
+    p_target.add_argument("--provisional", action="store_true", help="Mark targets as provisional")
+    p_target.add_argument("--notes", type=str, default=None, help="Notes about the target justification")
 
     p_toggle = subparsers.add_parser("toggle", help="Pause or resume digital game monitoring")
     p_toggle.add_argument("id", type=int, help="Game ID")

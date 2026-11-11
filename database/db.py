@@ -125,7 +125,12 @@ class Database:
                 CREATE TABLE IF NOT EXISTS watchlist (
                     id SERIAL PRIMARY KEY,
                     game_id INTEGER NOT NULL UNIQUE REFERENCES games(id) ON DELETE CASCADE,
-                    target_price REAL
+                    target_price REAL,
+                    target_deal REAL,
+                    target_great_deal REAL,
+                    target_exceptional REAL,
+                    is_provisional BOOLEAN NOT NULL DEFAULT FALSE,
+                    target_notes TEXT
                 );
 
                 CREATE TABLE IF NOT EXISTS alerts (
@@ -201,6 +206,8 @@ class Database:
                     error_log TEXT
                 );
                 """)
+                # Apply safe migrations to existing PostgreSQL tables
+                self._migrate_postgres_columns(cursor)
             else:
                 # SQLite schema
                 cursor.executescript("""
@@ -231,6 +238,11 @@ class Database:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     game_id INTEGER NOT NULL UNIQUE,
                     target_price REAL,
+                    target_deal REAL,
+                    target_great_deal REAL,
+                    target_exceptional REAL,
+                    is_provisional INTEGER NOT NULL DEFAULT 0,
+                    target_notes TEXT,
                     FOREIGN KEY (game_id) REFERENCES games(id)
                 );
                 CREATE TABLE IF NOT EXISTS alerts (
@@ -341,6 +353,29 @@ class Database:
         if "discount_percentage" not in price_cols:
             cursor.execute("ALTER TABLE price_history ADD COLUMN discount_percentage REAL DEFAULT 0.0")
 
+        cursor.execute("PRAGMA table_info(watchlist)")
+        wl_cols = [row[1] for row in cursor.fetchall()]
+        if "target_deal" not in wl_cols:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN target_deal REAL")
+        if "target_great_deal" not in wl_cols:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN target_great_deal REAL")
+        if "target_exceptional" not in wl_cols:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN target_exceptional REAL")
+        if "is_provisional" not in wl_cols:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN is_provisional INTEGER NOT NULL DEFAULT 0")
+        if "target_notes" not in wl_cols:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN target_notes TEXT")
+
+    def _migrate_postgres_columns(self, cursor):
+        """Safely add new columns to existing PostgreSQL tables if missing."""
+        cursor.execute("""
+            ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS target_deal REAL;
+            ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS target_great_deal REAL;
+            ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS target_exceptional REAL;
+            ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS is_provisional BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS target_notes TEXT;
+        """)
+
     def seed_default_retailers(self):
         """Ensure standard Indian retailers are registered with their respective check intervals."""
         default_retailers = [
@@ -448,7 +483,9 @@ class Database:
         """Return all digital games with active monitoring."""
         rows = self._fetchall(
             """
-            SELECT g.id, g.name, g.store_id, g.platform, g.store_url, g.edition_name, w.target_price
+            SELECT g.id, g.name, g.store_id, g.platform, g.store_url, g.edition_name,
+                   w.target_price, w.target_deal, w.target_great_deal, w.target_exceptional,
+                   w.is_provisional, w.target_notes
             FROM games g
             LEFT JOIN watchlist w ON g.id = w.game_id
             WHERE g.is_active = ?
@@ -465,6 +502,11 @@ class Database:
                 "store_url": r[4],
                 "edition_name": r[5] or "Standard Edition",
                 "target_price": r[6],
+                "target_deal": r[7],
+                "target_great_deal": r[8],
+                "target_exceptional": r[9],
+                "is_provisional": bool(r[10]) if r[10] is not None else False,
+                "target_notes": r[11],
             }
             for r in rows
         ]
@@ -474,7 +516,8 @@ class Database:
         rows = self._fetchall(
             """
             SELECT g.id, g.name, g.store_id, g.platform, g.store_url, g.edition_name, g.is_active,
-                   w.target_price,
+                   w.target_price, w.target_deal, w.target_great_deal, w.target_exceptional,
+                   w.is_provisional, w.target_notes,
                    (SELECT price FROM price_history WHERE game_id = g.id ORDER BY id DESC LIMIT 1) as current_price,
                    (SELECT MIN(price) FROM price_history WHERE game_id = g.id) as historical_low,
                    (SELECT checked_at FROM price_history WHERE game_id = g.id ORDER BY id DESC LIMIT 1) as last_checked
@@ -493,20 +536,84 @@ class Database:
                 "edition_name": r[5] or "Standard Edition",
                 "is_active": bool(r[6]),
                 "target_price": r[7],
-                "current_price": r[8],
-                "historical_low": r[9],
-                "last_checked": str(r[10]) if r[10] else None,
+                "target_deal": r[8],
+                "target_great_deal": r[9],
+                "target_exceptional": r[10],
+                "is_provisional": bool(r[11]) if r[11] is not None else False,
+                "target_notes": r[12],
+                "current_price": r[13],
+                "historical_low": r[14],
+                "last_checked": str(r[15]) if r[15] else None,
             }
             for r in rows
         ]
 
     def set_target_price(self, game_id: int, target_price: Optional[float]):
-        """Set or update target price for a digital game."""
+        """Set or update target price for a digital game (backwards-compatible)."""
         existing = self._fetchone("SELECT id FROM watchlist WHERE game_id = ?", (game_id,))
         if existing:
-            self._execute("UPDATE watchlist SET target_price = ? WHERE game_id = ?", (target_price, game_id))
+            self._execute(
+                "UPDATE watchlist SET target_price = ?, target_exceptional = COALESCE(target_exceptional, ?) WHERE game_id = ?",
+                (target_price, target_price, game_id)
+            )
         else:
-            self._execute("INSERT INTO watchlist (game_id, target_price) VALUES (?, ?)", (game_id, target_price))
+            self._execute(
+                "INSERT INTO watchlist (game_id, target_price, target_exceptional) VALUES (?, ?, ?)",
+                (game_id, target_price, target_price)
+            )
+
+    def set_target_tiers(
+        self,
+        game_id: int,
+        target_deal: Optional[float] = None,
+        target_great_deal: Optional[float] = None,
+        target_exceptional: Optional[float] = None,
+        is_provisional: bool = False,
+        target_notes: Optional[str] = None
+    ):
+        """Set multi-tier target prices (DEAL, GREAT DEAL, EXCEPTIONAL) for a game."""
+        legacy_target = target_exceptional if target_exceptional is not None else (target_great_deal or target_deal)
+        existing = self._fetchone("SELECT id FROM watchlist WHERE game_id = ?", (game_id,))
+        provisional_val = is_provisional if self.use_postgres else (1 if is_provisional else 0)
+
+        if existing:
+            self._execute(
+                """
+                UPDATE watchlist
+                SET target_price = ?,
+                    target_deal = ?,
+                    target_great_deal = ?,
+                    target_exceptional = ?,
+                    is_provisional = ?,
+                    target_notes = ?
+                WHERE game_id = ?
+                """,
+                (legacy_target, target_deal, target_great_deal, target_exceptional, provisional_val, target_notes, game_id)
+            )
+        else:
+            self._execute(
+                """
+                INSERT INTO watchlist (game_id, target_price, target_deal, target_great_deal, target_exceptional, is_provisional, target_notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (game_id, legacy_target, target_deal, target_great_deal, target_exceptional, provisional_val, target_notes)
+            )
+
+    def get_target_tiers(self, game_id: int) -> Optional[Dict[str, Any]]:
+        row = self._fetchone(
+            "SELECT target_price, target_deal, target_great_deal, target_exceptional, is_provisional, target_notes FROM watchlist WHERE game_id = ?",
+            (game_id,)
+        )
+        if not row:
+            return None
+        return {
+            "target_price": row[0],
+            "target_deal": row[1],
+            "target_great_deal": row[2],
+            "target_exceptional": row[3],
+            "is_provisional": bool(row[4]) if row[4] is not None else False,
+            "target_notes": row[5],
+        }
 
     def get_target_price(self, game_id: int) -> Optional[float]:
         row = self._fetchone("SELECT target_price FROM watchlist WHERE game_id = ?", (game_id,))

@@ -10,7 +10,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP1004-PPSA01721_00-GTAVCROSSGENBUND",
       "store_id": "EP1004-PPSA01721_00-GTAVCROSSGENBUND",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1331.0,
+      "target_deal": 1997.0,
+      "target_great_deal": 1664.0,
+      "target_exceptional": 1331.0,
+      "is_provisional": false,
+      "target_notes": "Verified Rockstar recurring promo benchmark (50% off regular)."
     },
     {
       "name": "Ghost of Tsushima Director's Cut",
@@ -18,7 +23,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP9000-PPSA03208_00-GHOSTDIRECTORPS5",
       "store_id": "EP9000-PPSA03208_00-GHOSTDIRECTORPS5",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1664.0,
+      "target_deal": 2499.0,
+      "target_great_deal": 2099.0,
+      "target_exceptional": 1664.0,
+      "is_provisional": false,
+      "target_notes": "Verified PlayStation first-party benchmark (50-67% off)."
     },
     {
       "name": "Marvel's Spider-Man 2",
@@ -26,7 +36,12 @@
       "store_url": "https://store.playstation.com/en-in/concept/10002456",
       "store_id": "EP9000-PPSA08338_00-MARVELSPIDERMAN2",
       "platform": "PS5",
-      "target_price": 2199
+      "target_price": 2199.0,
+      "target_deal": 3499.0,
+      "target_great_deal": 2849.0,
+      "target_exceptional": 2199.0,
+      "is_provisional": false,
+      "target_notes": "Preserved existing target ₹2,199 as exceptional; Sony first-party standard discount cycle."
     },
     {
       "name": "Marvel's Spider-Man: Miles Morales",
@@ -34,7 +49,12 @@
       "store_url": "https://store.playstation.com/en-in/concept/10000649",
       "store_id": "EP9000-PPSA01417_00-MARVELSSMMORALES",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1399.0,
+      "target_deal": 1999.0,
+      "target_great_deal": 1599.0,
+      "target_exceptional": 1399.0,
+      "is_provisional": false,
+      "target_notes": "Verified Sony catalog title sale pattern (50-65% off)."
     },
     {
       "name": "God of War (2018)",
@@ -42,7 +62,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP9000-CUSA07410_00-00000000GODOFWAR",
       "store_id": "EP9000-CUSA07410_00-0000000GODOFWARN",
       "platform": "PS4",
-      "target_price": null
+      "target_price": 599.0,
+      "target_deal": 749.0,
+      "target_great_deal": 649.0,
+      "target_exceptional": 599.0,
+      "is_provisional": false,
+      "target_notes": "Verified PlayStation Hits benchmark (currently at 50% deal ₹749)."
     },
     {
       "name": "God of War Ragnarök",
@@ -50,7 +75,12 @@
       "store_url": "https://store.playstation.com/en-in/concept/10001850",
       "store_id": "EP9000-PPSA08330_00-GOWRAGNAROK00000",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1999.0,
+      "target_deal": 2999.0,
+      "target_great_deal": 2499.0,
+      "target_exceptional": 1999.0,
+      "is_provisional": false,
+      "target_notes": "Verified Sony first-party promotion (currently on sale at ₹2,499)."
     },
     {
       "name": "Black Myth: Wukong",
@@ -66,7 +96,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP9000-PPSA29488_00-0000000000000000",
       "store_id": "EP9000-PPSA29488_00-0000000000000000",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 4319.0,
+      "target_deal": 5759.0,
+      "target_great_deal": 5039.0,
+      "target_exceptional": 4319.0,
+      "is_provisional": true,
+      "target_notes": "Provisional: 2-in-1 bundle edition with limited historical sale observations."
     },
     {
       "name": "HITMAN World of Assassination",
@@ -74,7 +109,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP3969-PPSA01769_00-0000000000000WOA",
       "store_id": "EP3969-PPSA01769_00-0000000000000WOA",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 2039.0,
+      "target_deal": 2622.0,
+      "target_great_deal": 2330.0,
+      "target_exceptional": 2039.0,
+      "is_provisional": false,
+      "target_notes": "Verified IO Interactive sale benchmark (currently on sale at ₹2,330)."
     },
     {
       "name": "007 First Light",
@@ -82,7 +122,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP3969-PPSA11386_00-007FLDELUXE00000",
       "store_id": "EP3969-PPSA11386_00-007FLDELUXE00000",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1919.0,
+      "target_deal": 2879.0,
+      "target_great_deal": 2399.0,
+      "target_exceptional": 1919.0,
+      "is_provisional": true,
+      "target_notes": "Provisional: Limited price history on Indian PS Store."
     },
     {
       "name": "Marvel's Wolverine",
@@ -90,7 +135,12 @@
       "store_url": "https://store.playstation.com/en-in/product/UP9000-PPSA03671_00-WOLVERINEDELUXE0",
       "store_id": "UP9000-PPSA03671_00-WOLVERINEDELUXE0",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 3639.0,
+      "target_deal": 4759.0,
+      "target_great_deal": 4311.0,
+      "target_exceptional": 3639.0,
+      "is_provisional": true,
+      "target_notes": "Provisional: Unreleased/Pre-order title; confidence LOW."
     },
     {
       "name": "UNCHARTED: Legacy of Thieves Collection",
@@ -98,7 +148,12 @@
       "store_url": "https://store.playstation.com/en-in/concept/205354",
       "store_id": "EP9000-PPSA05684_00-UNCHARTED4R00000",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 999.0,
+      "target_deal": 1499.0,
+      "target_great_deal": 1199.0,
+      "target_exceptional": 999.0,
+      "is_provisional": false,
+      "target_notes": "Verified Sony remaster discount pattern (50-67% off)."
     },
     {
       "name": "F1 26",
@@ -106,7 +161,12 @@
       "store_url": "https://store.playstation.com/en-in/product/UP0006-PPSA24662_00-2026SEASONEDITIO",
       "store_id": "UP0006-PPSA24662_00-2026SEASONEDITIO",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1599.0,
+      "target_deal": 2399.0,
+      "target_great_deal": 1999.0,
+      "target_exceptional": 1599.0,
+      "is_provisional": true,
+      "target_notes": "Provisional: EA seasonal title discount cadence; limited Neon observations."
     },
     {
       "name": "Gran Turismo 7",
@@ -114,7 +174,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP9001-PPSA01316_00-GT7STD0000000PS5",
       "store_id": "EP9001-PPSA01316_00-GT7STD0000000PS5",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1999.0,
+      "target_deal": 2999.0,
+      "target_great_deal": 2499.0,
+      "target_exceptional": 1999.0,
+      "is_provisional": false,
+      "target_notes": "Verified Sony first-party lifecycle discount pattern."
     },
     {
       "name": "Red Dead Redemption 2",
@@ -122,7 +187,12 @@
       "store_url": "https://store.playstation.com/en-in/product/EP1004-CUSA08519_00-RDR2ULTMEDTNBUND",
       "store_id": "EP1004-CUSA08519_00-RDR2ULTMEDTNBUND",
       "platform": "PS4",
-      "target_price": 1499
+      "target_price": 1499.0,
+      "target_deal": 2299.0,
+      "target_great_deal": 1539.0,
+      "target_exceptional": 1499.0,
+      "is_provisional": false,
+      "target_notes": "Preserved existing target ₹1,499 as exceptional; verified recurring 80% discount benchmark."
     },
     {
       "name": "Cyberpunk 2077",
@@ -130,7 +200,12 @@
       "store_url": "https://store.playstation.com/en-in/concept/234567",
       "store_id": "EP4497-PPSA04027_00-00000000000000N1",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 1199.0,
+      "target_deal": 1799.0,
+      "target_great_deal": 1499.0,
+      "target_exceptional": 1199.0,
+      "is_provisional": false,
+      "target_notes": "Verified CD Projekt Red sale recurrence (50% off typical)."
     },
     {
       "name": "Resident Evil 4 Remake",
@@ -146,7 +221,12 @@
       "store_url": "https://store.playstation.com/en-in/concept/10001130",
       "store_id": "EP0002-PPSA07950_00-CODMW4STANDARD01",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 3299.0,
+      "target_deal": 4499.0,
+      "target_great_deal": 3899.0,
+      "target_exceptional": 3299.0,
+      "is_provisional": true,
+      "target_notes": "Provisional: Activision benchmark pricing; limited Neon observations."
     },
     {
       "name": "Minecraft",
@@ -154,7 +234,12 @@
       "store_url": "https://store.playstation.com/en-in/product/UP4433-PPSA19639_00-MCULTIMATEBUNDLE",
       "store_id": "UP4433-PPSA19639_00-MCULTIMATEBUNDLE",
       "platform": "PS5",
-      "target_price": null
+      "target_price": 2164.0,
+      "target_deal": 2664.0,
+      "target_great_deal": 2497.0,
+      "target_exceptional": 2164.0,
+      "is_provisional": true,
+      "target_notes": "Provisional: Bundle edition with limited historical discount points."
     }
   ]
 }

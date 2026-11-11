@@ -13,29 +13,72 @@ import config
 
 
 def send_deal_alert(game: Dict[str, Any], price_data: Dict[str, Any], detection: Dict[str, Any]) -> bool:
-    """Send formatted Telegram alert for a Digital PS Store deal."""
+    """Send formatted Telegram alert for a Digital PS Store deal with multi-tier badge and breakdown."""
     if not config.is_telegram_configured():
         print("Telegram not configured; digital alert not sent.")
         return False
 
+    alert_types = detection.get("alert_types", [])
+
+    # Header prioritization
+    if "EXCEPTIONAL DEAL" in alert_types:
+        header = "🚀 *PS5 DIGITAL DEAL ALERT — EXCEPTIONAL DEAL*"
+    elif "GREAT DEAL" in alert_types:
+        header = "⚡ *PS5 DIGITAL DEAL ALERT — GREAT DEAL*"
+    elif "DEAL" in alert_types:
+        header = "🎯 *PS5 DIGITAL DEAL ALERT — DEAL*"
+    elif "NEW HISTORICAL LOW" in alert_types:
+        header = "🔥 *PS5 DIGITAL DEAL ALERT — NEW HISTORICAL LOW*"
+    else:
+        header = "🎮 *PS5 DIGITAL DEAL ALERT*"
+
     original = price_data.get("original_price")
     original_text = f"₹{original:,.0f}" if original is not None else "Not listed"
-    target_price = game.get("target_price")
-    target_text = f"₹{target_price:,.0f}" if target_price is not None else "None"
+
+    # Multi-tier target breakdown
+    t_deal = detection.get("target_deal") or game.get("target_deal")
+    t_great = detection.get("target_great_deal") or game.get("target_great_deal")
+    t_exc = detection.get("target_exceptional") or game.get("target_exceptional")
+    hit_tier = detection.get("tier")
+
+    tier_parts = []
+    if t_deal is not None:
+        badge = " ✅" if hit_tier == "DEAL" else ""
+        tier_parts.append(f"Deal: ₹{t_deal:,.0f}{badge}")
+    if t_great is not None:
+        badge = " ✅" if hit_tier == "GREAT DEAL" else ""
+        tier_parts.append(f"Great Deal: ₹{t_great:,.0f}{badge}")
+    if t_exc is not None:
+        badge = " ✅" if hit_tier == "EXCEPTIONAL DEAL" else ""
+        tier_parts.append(f"Exceptional: ₹{t_exc:,.0f}{badge}")
+
+    if tier_parts:
+        target_display = " | ".join(tier_parts)
+    else:
+        target_price = game.get("target_price")
+        target_display = f"₹{target_price:,.0f}" if target_price is not None else "None"
+
     prev_low = detection.get("previous_historical_low")
     prev_low_text = f"₹{prev_low:,.0f}" if prev_low is not None else "Building history"
 
+    is_prov = detection.get("is_provisional") or game.get("is_provisional", False)
+    notes = detection.get("target_notes") or game.get("target_notes")
+    prov_badge = "\n⚠️ *Status:* Provisional target (early/limited history)" if is_prov else ""
+    notes_line = f"\n📝 *Notes:* {notes}" if notes else ""
+
     message = (
-        "🎮 *PS5 DIGITAL DEAL ALERT*\n\n"
+        f"{header}\n\n"
         f"🕹️ *{game['name']}*\n"
         f"📦 *Edition:* {price_data.get('edition_name', game.get('edition_name', 'Standard Edition'))}\n"
         f"💰 *Current Price:* ₹{detection['current_price']:,.0f}\n"
         f"🏷️ *Original Price:* {original_text}\n"
         f"🔥 *Discount:* {detection['discount_percentage']}%\n"
         f"💵 *Savings:* ₹{detection['savings']:,.0f}\n"
-        f"🎯 *Target Price:* {target_text}\n"
+        f"🎯 *Target Tiers:* {target_display}\n"
         f"📉 *Historical Low:* {prev_low_text}\n"
-        f"📌 *Trigger:* {', '.join(detection['alert_types'])}\n\n"
+        f"📌 *Trigger:* {', '.join(alert_types)}"
+        f"{prov_badge}"
+        f"{notes_line}\n\n"
         f"🛒 [Open PlayStation Store India]({price_data.get('store_url') or game['store_url']})"
     )
 

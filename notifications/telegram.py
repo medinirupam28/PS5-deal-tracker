@@ -74,8 +74,9 @@ def send_physical_deal_alert(item: Dict[str, Any], price_data: Dict[str, Any], d
     return _dispatch_telegram_message(message)
 
 
-def _dispatch_telegram_message(text: str) -> bool:
-    """Send message via Telegram Bot API with timeout and error handling."""
+def _dispatch_telegram_message(text: str, max_retries: int = 3) -> bool:
+    """Send message via Telegram Bot API with timeout, exponential backoff, and error handling."""
+    import time
     url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": config.TELEGRAM_CHAT_ID,
@@ -83,13 +84,19 @@ def _dispatch_telegram_message(text: str) -> bool:
         "parse_mode": "Markdown",
         "disable_web_page_preview": False
     }
-    try:
-        response = requests.post(url, json=payload, timeout=20)
-        response.raise_for_status()
-        result = response.json()
-        if not result.get("ok"):
-            print("Telegram rejected message:", result)
-        return bool(result.get("ok"))
-    except requests.RequestException as exc:
-        print(f"Telegram dispatch failed: {exc}")
-        return False
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(url, json=payload, timeout=20)
+            response.raise_for_status()
+            result = response.json()
+            if not result.get("ok"):
+                print("Telegram rejected message:", result)
+                return False
+            return True
+        except requests.RequestException as exc:
+            if attempt < max_retries:
+                time.sleep(2 ** attempt)
+            else:
+                print(f"Telegram dispatch failed after {max_retries} attempts: {exc}")
+                return False

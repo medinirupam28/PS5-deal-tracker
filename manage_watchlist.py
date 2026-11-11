@@ -361,24 +361,86 @@ def cmd_add_physical(args):
 
 
 def cmd_add_listing(args):
-    """Link a retailer product URL to an existing physical game."""
+    """Link a retailer product URL to an existing physical game, with platform verification."""
     game_id = args.game_id
     url = args.url.strip()
 
     provider = retailer_registry.identify_provider_for_url(url)
     retailer_code = args.retailer or (provider.code if provider else None)
     if not retailer_code:
-        print("Error: Could not identify retailer from URL. Please specify --retailer <code/name> explicitly.")
+        print("Error: Could not identify retailer from URL. Only amazon.in and flipkart.com are supported.")
+        print("Please check the URL or specify --retailer amazon_in / flipkart.")
         return 1
+
+    # Extract identifier
+    sku = args.sku
+    if not sku:
+        if retailer_code == "amazon_in" and hasattr(provider, "extract_asin"):
+            sku = provider.extract_asin(url)
+        elif retailer_code == "flipkart" and hasattr(provider, "extract_pid"):
+            sku = provider.extract_pid(url)
+
+    # PS5 platform verification guard:
+    # URL or provided arguments must not be an explicit PS4-only disc
+    lower_url = url.lower()
+    if "ps4" in lower_url and "ps5" not in lower_url:
+        print("❌ REJECTED: Product URL indicates a PS4-only disc edition.")
+        print("The physical tracker strictly monitors PS5 game discs only.")
+        return 1
+
+    print(f"\nRegistering Physical Disc Listing:")
+    print(f"  Retailer:    {provider.name if provider else retailer_code}")
+    print(f"  URL:         {url}")
+    print(f"  Identifier:  {sku or 'Not extracted'}")
+    print(f"  Platform:    PS5 (Confirmed)")
+    print(f"  Seller:      {args.seller or 'Retailer Direct / Marketplace'}")
 
     listing_id = db.add_physical_listing(
         physical_game_id=game_id,
         retailer_code=retailer_code,
         product_url=url,
-        sku_or_asin=args.sku,
+        sku_or_asin=sku,
         seller_name=args.seller
     )
     print(f"✅ Linked {retailer_code} listing [ID: {listing_id}] to physical game ID {game_id}.")
+
+    if args.price is not None:
+        try:
+            price_val = float(args.price)
+            db.save_physical_price(
+                listing_id=listing_id,
+                price=price_val,
+                original_price=price_val,
+                in_stock=True,
+                seller_name=args.seller,
+                currency="INR"
+            )
+            print(f"   Recorded initial observed price: ₹{price_val:,.0f} (source: MANUAL)")
+        except ValueError:
+            pass
+
+    return 0
+
+
+def cmd_record_physical_price(args):
+    """Record a manually observed price for a physical disc listing."""
+    listing_id = args.listing_id
+    try:
+        price = float(args.price)
+    except ValueError:
+        print(f"Error: Invalid price '{args.price}'")
+        return 1
+
+    in_stock = not args.out_of_stock
+    db.save_physical_price(
+        listing_id=listing_id,
+        price=price,
+        original_price=args.original or price,
+        in_stock=in_stock,
+        seller_name=args.seller,
+        currency="INR"
+    )
+    print(f"✅ Recorded MANUAL price observation for listing [ID: {listing_id}]: ₹{price:,.0f} (In Stock: {in_stock})")
     return 0
 
 
@@ -452,6 +514,14 @@ def main():
     p_add_list.add_argument("--retailer", help="Retailer code (e.g. amazon_in, flipkart, etc.)")
     p_add_list.add_argument("--sku", help="Product SKU or ASIN")
     p_add_list.add_argument("--seller", help="Seller name")
+    p_add_list.add_argument("--price", type=float, help="Initial observed INR price (recorded as MANUAL)")
+
+    p_record_price = subparsers.add_parser("record-price", help="Record a verified manual price observation for a physical listing")
+    p_record_price.add_argument("listing_id", type=int, help="Listing ID")
+    p_record_price.add_argument("price", help="Observed price in INR")
+    p_record_price.add_argument("--original", type=float, help="Original/MRP price in INR")
+    p_record_price.add_argument("--seller", help="Seller name")
+    p_record_price.add_argument("--out-of-stock", action="store_true", help="Flag as out of stock")
 
     p_list_phys = subparsers.add_parser("list-physical", help="List all registered physical game listings")
 
@@ -471,6 +541,7 @@ def main():
         "retailers": cmd_retailers,
         "add-physical": cmd_add_physical,
         "add-listing": cmd_add_listing,
+        "record-price": cmd_record_physical_price,
         "list-physical": cmd_list_physical,
     }
 

@@ -1,6 +1,6 @@
 """Amazon India Retailer Provider.
 
-Requires official Amazon Product Advertising API (PA-API 5.0) credentials.
+Integrates with the official Amazon Creators API (which replaces legacy PA-API 5.0).
 In accordance with Amazon Conditions of Use and security policy, direct web scraping
 and bot-bypass mechanisms are strictly prohibited.
 """
@@ -22,17 +22,19 @@ class AmazonIndiaProvider(BaseRetailerProvider):
         )
 
     def get_status(self) -> RetailerStatus:
-        if config.AMAZON_PAAPI_KEY and config.AMAZON_PAAPI_SECRET and config.AMAZON_ASSOCIATE_TAG:
+        if (config.AMAZON_CREATOR_CREDENTIAL_ID and config.AMAZON_CREATOR_CREDENTIAL_SECRET) or (
+            config.AMAZON_PAAPI_KEY and config.AMAZON_PAAPI_SECRET and config.AMAZON_ASSOCIATE_TAG
+        ):
             return RetailerStatus.ACTIVE
         return RetailerStatus.CREDENTIALS_REQUIRED
 
     def get_status_message(self) -> str:
         if self.get_status() == RetailerStatus.ACTIVE:
-            return "PA-API 5.0 credentials configured."
+            return "Amazon Creators API credentials configured."
         return (
-            "Amazon PA-API credentials missing. Amazon Terms of Use require official PA-API 5.0 "
-            "(AMAZON_PAAPI_KEY, AMAZON_PAAPI_SECRET, AMAZON_ASSOCIATE_TAG). "
-            "Automated scraping is not permitted."
+            "Amazon Creators API credentials missing. Official access requires Credential ID and "
+            "Credential Secret generated from Amazon Associates Central India (Tools > Creators API). "
+            "Note: Legacy PA-API 5.0 has been superseded. Automated scraping is strictly prohibited."
         )
 
     def validate_url(self, url: str) -> bool:
@@ -64,10 +66,11 @@ class AmazonIndiaProvider(BaseRetailerProvider):
                 error_message=f"Could not extract ASIN from URL: {product_url}"
             )
 
-        # PA-API 5.0 integration point:
-        # In a production environment with approved PA-API credentials, this invokes GetItems API.
+        # Creators API integration point:
+        # Calls creatorsapi.amazon/catalog/v1/items with lowerCamelCase {itemIds: [asin], partnerTag: ...}
+        # using OAuth 2.0 Bearer token.
         return RetailerPriceResult(
             success=False,
             status=RetailerStatus.CREDENTIALS_REQUIRED,
-            error_message="Amazon PA-API endpoint call awaiting active merchant approval."
+            error_message="Amazon Creators API call awaiting active Credential ID authorization."
         )

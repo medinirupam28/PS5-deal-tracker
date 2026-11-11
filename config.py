@@ -29,10 +29,17 @@ CHAT_ID = TELEGRAM_CHAT_ID
 NEON_DATABASE_URL = os.getenv("NEON_DATABASE_URL", "").strip()
 
 # Retailer Credentials (Optional)
-AMAZON_PAAPI_KEY = os.getenv("AMAZON_PAAPI_KEY", "").strip()
-AMAZON_PAAPI_SECRET = os.getenv("AMAZON_PAAPI_SECRET", "").strip()
+# Amazon Creators API (replaces legacy PA-API 5.0)
+AMAZON_CREATOR_CREDENTIAL_ID = os.getenv("AMAZON_CREATOR_CREDENTIAL_ID", "").strip()
+AMAZON_CREATOR_CREDENTIAL_SECRET = os.getenv("AMAZON_CREATOR_CREDENTIAL_SECRET", "").strip()
+AMAZON_CREATOR_VERSION = os.getenv("AMAZON_CREATOR_VERSION", "v1").strip()
 AMAZON_ASSOCIATE_TAG = os.getenv("AMAZON_ASSOCIATE_TAG", "").strip()
 
+# Legacy aliases if set
+AMAZON_PAAPI_KEY = os.getenv("AMAZON_PAAPI_KEY", "").strip()
+AMAZON_PAAPI_SECRET = os.getenv("AMAZON_PAAPI_SECRET", "").strip()
+
+# Flipkart Affiliate API
 FLIPKART_AFFILIATE_ID = os.getenv("FLIPKART_AFFILIATE_ID", "").strip()
 FLIPKART_AFFILIATE_TOKEN = os.getenv("FLIPKART_AFFILIATE_TOKEN", "").strip()
 
@@ -40,7 +47,7 @@ FLIPKART_AFFILIATE_TOKEN = os.getenv("FLIPKART_AFFILIATE_TOKEN", "").strip()
 DEFAULT_REGION = "en-in"
 DEFAULT_CURRENCY = "INR"
 DEFAULT_MINIMUM_DISCOUNT = 30.0
-DEFAULT_CHECK_INTERVAL_HOURS = 2
+DEFAULT_CHECK_INTERVAL_HOURS = 6
 
 
 def is_neon_configured() -> bool:

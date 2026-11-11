@@ -39,6 +39,17 @@ class FlipkartProvider(BaseRetailerProvider):
         clean = url.lower()
         return "flipkart.com" in clean and ("/p/" in clean or "pid=" in clean)
 
+    def extract_pid(self, url: str) -> Optional[str]:
+        if not url:
+            return None
+        import re
+        match = re.search(r"pid=([A-Z0-9]{16})", url, re.IGNORECASE)
+        if match:
+            return match.group(1).upper()
+        # Fallback for /p/itm... format
+        match = re.search(r"/p/(itm[a-z0-9]+)", url, re.IGNORECASE)
+        return match.group(1) if match else None
+
     def fetch_price(self, product_url: str, sku: Optional[str] = None) -> RetailerPriceResult:
         status = self.get_status()
         if status != RetailerStatus.ACTIVE:
@@ -48,8 +59,19 @@ class FlipkartProvider(BaseRetailerProvider):
                 error_message=self.get_status_message()
             )
 
+        pid = sku or self.extract_pid(product_url)
+        if not pid:
+            return RetailerPriceResult(
+                success=False,
+                status=status,
+                error_message=f"Could not extract Product ID (PID) from URL: {product_url}"
+            )
+
+        # Uses Flipkart Affiliate API endpoint:
+        # https://affiliate-api.flipkart.net/affiliate/1.0/product.json?id=<pid>
+        # with Fk-Affiliate-Id and Fk-Affiliate-Token headers.
         return RetailerPriceResult(
             success=False,
             status=RetailerStatus.CREDENTIALS_REQUIRED,
-            error_message="Flipkart Affiliate endpoint call awaiting active partner approval."
+            error_message="Flipkart Affiliate API call awaiting active partner approval."
         )

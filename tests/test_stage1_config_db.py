@@ -10,7 +10,7 @@ def test_config_defaults():
     assert config.DEFAULT_REGION == "en-in"
     assert config.DEFAULT_CURRENCY == "INR"
     assert config.DEFAULT_MINIMUM_DISCOUNT == 30.0
-    assert config.DEFAULT_CHECK_INTERVAL_HOURS == 2
+    assert config.DEFAULT_CHECK_INTERVAL_HOURS == 6
     # Ensure aliases work
     assert config.BOT_TOKEN == config.TELEGRAM_BOT_TOKEN
     assert config.CHAT_ID == config.TELEGRAM_CHAT_ID

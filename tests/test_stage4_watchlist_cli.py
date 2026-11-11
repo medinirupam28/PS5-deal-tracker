@@ -91,9 +91,26 @@ def test_cmd_add_duplicate_protection(mock_collector_class):
     ]
     mock_collector_class.return_value = mock_collector
 
-    # Add game that already exists in DB (ID 3, store_id 10002456)
+    # Add game that already exists in DB (ID 3, store_id EP9000-PPSA08338_00-MARVELSPIDERMAN2)
+    mock_collector.get_available_editions.return_value = [
+        {
+            "game_name": "Marvel's Spider-Man 2",
+            "edition_id": "EP9000-PPSA08338_00-MARVELSPIDERMAN2",
+            "edition_name": "Marvel’s Spider-Man 2",
+            "current_price": 4999.0,
+            "original_price": 4999.0,
+            "discount_text": None,
+            "sale_ends": None,
+            "store_url": "https://store.playstation.com/en-in/product/EP9000-PPSA08338_00-MARVELSPIDERMAN2",
+            "is_free": False,
+            "is_ps5": True,
+            "currency": "INR",
+        }
+    ]
+    mock_collector_class.return_value = mock_collector
+
     args = DummyArgs(
-        url="https://store.playstation.com/en-in/concept/10002456",
+        url="https://store.playstation.com/en-in/product/EP9000-PPSA08338_00-MARVELSPIDERMAN2",
         edition=None,
         edition_id=None,
         target=2199.0,
@@ -105,7 +122,7 @@ def test_cmd_add_duplicate_protection(mock_collector_class):
 
     db = Database()
     # Check that game 3 target price was updated and no duplicate was added
-    game = db.get_game_by_store_id("10002456")
+    game = db.get_game_by_store_id("EP9000-PPSA08338_00-MARVELSPIDERMAN2")
     assert game is not None
     assert game["id"] == 3
     assert db.get_target_price(3) == 2199.0

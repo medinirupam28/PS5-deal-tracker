@@ -263,19 +263,84 @@ def migrate_data(sqlite_path: Path, neon_url: str, dry_run: bool = False) -> boo
                         (row[0], row[1], row[2], row[3], row[4], bool(row[5]))
                     )
 
+                # 6. Migrate physical_games
+                sqlite_cursor.execute("SELECT id, title, platform, edition, target_price, is_active FROM physical_games")
+                phys_games = sqlite_cursor.fetchall()
+                for row in phys_games:
+                    pg_cursor.execute(
+                        """
+                        INSERT INTO physical_games (id, title, platform, edition, target_price, is_active)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            platform = EXCLUDED.platform,
+                            edition = EXCLUDED.edition,
+                            target_price = EXCLUDED.target_price,
+                            is_active = EXCLUDED.is_active
+                        """,
+                        (row[0], row[1], row[2], row[3], row[4], bool(row[5]))
+                    )
+
+                # 7. Migrate physical_listings
+                sqlite_cursor.execute("SELECT id, physical_game_id, retailer_id, product_url, sku_or_asin, seller_name, is_active, last_checked_at FROM physical_listings")
+                phys_listings = sqlite_cursor.fetchall()
+                for row in phys_listings:
+                    pg_cursor.execute(
+                        """
+                        INSERT INTO physical_listings (id, physical_game_id, retailer_id, product_url, sku_or_asin, seller_name, is_active, last_checked_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO UPDATE SET
+                            physical_game_id = EXCLUDED.physical_game_id,
+                            retailer_id = EXCLUDED.retailer_id,
+                            product_url = EXCLUDED.product_url,
+                            sku_or_asin = EXCLUDED.sku_or_asin,
+                            seller_name = EXCLUDED.seller_name,
+                            is_active = EXCLUDED.is_active,
+                            last_checked_at = EXCLUDED.last_checked_at
+                        """,
+                        (row[0], row[1], row[2], row[3], row[4], row[5], bool(row[6]), row[7])
+                    )
+
+                # 8. Migrate physical_price_history
+                sqlite_cursor.execute("SELECT id, listing_id, price, original_price, discount_percentage, in_stock, seller_name, currency, checked_at FROM physical_price_history")
+                phys_prices = sqlite_cursor.fetchall()
+                for row in phys_prices:
+                    pg_cursor.execute(
+                        """
+                        INSERT INTO physical_price_history (id, listing_id, price, original_price, discount_percentage, in_stock, seller_name, currency, checked_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO NOTHING
+                        """,
+                        (row[0], row[1], row[2], row[3], row[4] or 0.0, bool(row[5]), row[6], row[7] or 'INR', row[8])
+                    )
+
+                # 9. Migrate physical_alerts
+                sqlite_cursor.execute("SELECT id, listing_id, price, alert_type, sent_at FROM physical_alerts")
+                phys_alerts = sqlite_cursor.fetchall()
+                for row in phys_alerts:
+                    pg_cursor.execute(
+                        """
+                        INSERT INTO physical_alerts (id, listing_id, price, alert_type, sent_at)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO NOTHING
+                        """,
+                        (row[0], row[1], row[2], row[3], row[4])
+                    )
+
                 # Reset SERIAL sequences
                 for seq_table in ["games", "price_history", "watchlist", "alerts", "retailers", "physical_games", "physical_listings", "physical_price_history", "physical_alerts", "monitoring_runs"]:
                     pg_cursor.execute(f"SELECT setval(pg_get_serial_sequence('{seq_table}', 'id'), COALESCE((SELECT MAX(id) FROM {seq_table}), 1), true)")
 
                 # Verify counts in PostgreSQL
                 print("\n--- Verifying Neon PostgreSQL Counts ---")
-                for table, expected_count in sqlite_counts.items():
-                    if table in ["games", "price_history", "watchlist", "alerts", "retailers"]:
-                        pg_cursor.execute(f"SELECT COUNT(*) FROM {table}")
-                        pg_count = pg_cursor.fetchone()[0]
-                        print(f"  {table}: Expected {expected_count} | Found {pg_count}")
-                        if pg_count < expected_count:
-                            raise AssertionError(f"Count mismatch for table {table}: expected {expected_count}, got {pg_count}")
+                tables_to_verify = ["games", "price_history", "watchlist", "alerts", "retailers", "physical_games", "physical_listings", "physical_price_history", "physical_alerts"]
+                for table in tables_to_verify:
+                    expected_count = sqlite_counts.get(table, 0)
+                    pg_cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                    pg_count = pg_cursor.fetchone()[0]
+                    print(f"  {table}: Expected {expected_count} | Found {pg_count}")
+                    if pg_count < expected_count:
+                        raise AssertionError(f"Count mismatch for table {table}: expected {expected_count}, got {pg_count}")
 
                 if dry_run:
                     print("\n[Dry Run] Verification passed. Rolling back changes as requested.")

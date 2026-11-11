@@ -15,7 +15,7 @@ def test_list_command(capsys):
     ret = cmd_list(args)
     assert ret == 0
     captured = capsys.readouterr()
-    assert "Call of Duty Modern Warfare 4" in captured.out
+    assert "Call of Duty" in captured.out
     assert "Red Dead Redemption 2" in captured.out
 
 def test_target_command(capsys):

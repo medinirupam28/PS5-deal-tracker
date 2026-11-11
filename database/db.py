@@ -31,10 +31,15 @@ def is_postgres_active() -> bool:
 
 
 class Database:
-    def __init__(self, db_url: Optional[str] = None, sqlite_path: Optional[Path] = None):
-        self.db_url = db_url if db_url is not None else config.NEON_DATABASE_URL
+    def __init__(self, db_url: Optional[str] = None, sqlite_path: Optional[Path] = None, force_sqlite: bool = False):
+        if force_sqlite or sqlite_path is not None:
+            self.db_url = None
+            self.use_postgres = False
+        else:
+            self.db_url = db_url if db_url is not None else config.NEON_DATABASE_URL
+            self.use_postgres = bool(self.db_url and self.db_url.startswith(("postgres://", "postgresql://")) and PSYCOPG_AVAILABLE)
+
         self.sqlite_path = sqlite_path if sqlite_path is not None else DB_PATH
-        self.use_postgres = bool(self.db_url and self.db_url.startswith(("postgres://", "postgresql://")) and PSYCOPG_AVAILABLE)
 
     @contextmanager
     def get_connection(self):

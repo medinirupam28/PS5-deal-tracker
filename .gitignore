@@ -17,6 +17,7 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+scratch/
 
 # Virtual Environments
 .venv/

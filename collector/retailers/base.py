@@ -15,7 +15,9 @@ from typing import Optional
 class RetailerStatus(str, Enum):
     ACTIVE = "ACTIVE"
     CREDENTIALS_REQUIRED = "CREDENTIALS_REQUIRED"
+    LISTING_FOUND = "LISTING_FOUND"
     UNAVAILABLE = "UNAVAILABLE"
+    ERROR = "ERROR"
 
 
 @dataclass

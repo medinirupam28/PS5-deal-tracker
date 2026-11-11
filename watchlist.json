@@ -5,57 +5,155 @@
   "minimum_discount_percent": 30,
   "games": [
     {
-      "name": "Call of Duty Modern Warfare 4",
-      "store_url": "https://store.playstation.com/en-in/concept/10001130",
-      "store_id": "10001130",
-      "target_price": null
-    },
-    {
-      "name": "Red Dead Redemption 2",
-      "store_url": "https://store.playstation.com/en-in/concept/209441",
-      "store_id": "209441",
-      "target_price": null
-    },
-    {
-      "name": "Marvel's Spider-Man 2",
-      "store_url": "https://store.playstation.com/en-in/concept/10002456",
-      "store_id": "10002456",
+      "name": "Grand Theft Auto V",
+      "edition_name": "Grand Theft Auto V (PS4™ & PS5™)",
+      "store_url": "https://store.playstation.com/en-in/product/EP1004-PPSA01721_00-GTAVCROSSGENBUND",
+      "store_id": "EP1004-PPSA01721_00-GTAVCROSSGENBUND",
+      "platform": "PS5",
       "target_price": null
     },
     {
       "name": "Ghost of Tsushima Director's Cut",
+      "edition_name": "Ghost of Tsushima DIRECTOR’S CUT",
       "store_url": "https://store.playstation.com/en-in/product/EP9000-PPSA03208_00-GHOSTDIRECTORPS5",
       "store_id": "EP9000-PPSA03208_00-GHOSTDIRECTORPS5",
+      "platform": "PS5",
       "target_price": null
     },
     {
-      "name": "Grand Theft Auto V",
-      "store_url": "https://store.playstation.com/en-in/product/EP1004-PPSA01721_00-GTAVCROSSGENBUND",
-      "store_id": "EP1004-PPSA01721_00-GTAVCROSSGENBUND",
+      "name": "Marvel's Spider-Man 2",
+      "edition_name": "Marvel’s Spider-Man 2",
+      "store_url": "https://store.playstation.com/en-in/concept/10002456",
+      "store_id": "EP9000-PPSA08338_00-MARVELSPIDERMAN2",
+      "platform": "PS5",
+      "target_price": 2199
+    },
+    {
+      "name": "Marvel's Spider-Man: Miles Morales",
+      "edition_name": "Marvel's Spider-Man: Miles Morales PS4 & PS5",
+      "store_url": "https://store.playstation.com/en-in/concept/10000649",
+      "store_id": "EP9000-PPSA01417_00-MARVELSSMMORALES",
+      "platform": "PS5",
       "target_price": null
     },
     {
-      "name": "Black Myth Wukong Digital Deluxe",
+      "name": "God of War (2018)",
+      "edition_name": "God of War™",
+      "store_url": "https://store.playstation.com/en-in/product/EP9000-CUSA07410_00-00000000GODOFWAR",
+      "store_id": "EP9000-CUSA07410_00-0000000GODOFWARN",
+      "platform": "PS4",
+      "target_price": null
+    },
+    {
+      "name": "God of War Ragnarök",
+      "edition_name": "God of War Ragnarök",
+      "store_url": "https://store.playstation.com/en-in/concept/10001850",
+      "store_id": "EP9000-PPSA08330_00-GOWRAGNAROK00000",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "Black Myth: Wukong",
+      "edition_name": "Black Myth: Wukong",
       "store_url": "https://store.playstation.com/en-in/product/HP6545-PPSA23226_00-GAMEDELUXE000000",
-      "store_id": "HP6545-PPSA23226_00-GAMEDELUXE000000",
-      "target_price": null
-    },
-    {
-      "name": "Gran Turismo 7",
-      "store_url": "https://store.playstation.com/en-in/product/EP9001-PPSA01316_00-GT7STD0000000PS5",
-      "store_id": "EP9001-PPSA01316_00-GT7STD0000000PS5",
+      "store_id": "HP6545-PPSA23226_00-GAME000000000000",
+      "platform": "PS5",
       "target_price": null
     },
     {
       "name": "The Last of Us Complete",
+      "edition_name": "The Last of Us™ Complete",
       "store_url": "https://store.playstation.com/en-in/product/EP9000-PPSA29488_00-0000000000000000",
       "store_id": "EP9000-PPSA29488_00-0000000000000000",
+      "platform": "PS5",
       "target_price": null
     },
     {
-      "name": "Resident Evil Remake Trilogy",
+      "name": "HITMAN World of Assassination",
+      "edition_name": "HITMAN World of Assassination",
+      "store_url": "https://store.playstation.com/en-in/product/EP3969-PPSA01769_00-0000000000000WOA",
+      "store_id": "EP3969-PPSA01769_00-0000000000000WOA",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "007 First Light",
+      "edition_name": "007 First Light",
+      "store_url": "https://store.playstation.com/en-in/concept/10006560",
+      "store_id": "EP3969-PPSA11386_00-007FIRSTLIGHT000",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "Marvel's Wolverine",
+      "edition_name": "Marvel’s Wolverine",
+      "store_url": "https://store.playstation.com/en-in/concept/10002861",
+      "store_id": "UP9000-PPSA03671_00-MARVELSWOLVERINE",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "UNCHARTED: Legacy of Thieves Collection",
+      "edition_name": "UNCHARTED: Legacy of Thieves Collection",
+      "store_url": "https://store.playstation.com/en-in/concept/205354",
+      "store_id": "EP9000-PPSA05684_00-UNCHARTED4R00000",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "F1 26",
+      "edition_name": "F1® 25: 2026 Season Edition",
+      "store_url": "https://store.playstation.com/en-in/product/UP0006-PPSA24662_00-2026SEASONEDITIO",
+      "store_id": "UP0006-PPSA24662_00-2026SEASONEDITIO",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "Gran Turismo 7",
+      "edition_name": "Gran Turismo™ 7",
+      "store_url": "https://store.playstation.com/en-in/product/EP9001-PPSA01316_00-GT7STD0000000PS5",
+      "store_id": "EP9001-PPSA01316_00-GT7STD0000000PS5",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "Red Dead Redemption 2",
+      "edition_name": "Red Dead Redemption 2",
+      "store_url": "https://store.playstation.com/en-in/concept/209441",
+      "store_id": "EP1004-CUSA08519_00-REDEMPTIONFULL02",
+      "platform": "PS4",
+      "target_price": 1499
+    },
+    {
+      "name": "Cyberpunk 2077",
+      "edition_name": "Cyberpunk 2077",
+      "store_url": "https://store.playstation.com/en-in/concept/234567",
+      "store_id": "EP4497-PPSA04027_00-00000000000000N1",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "Resident Evil 4 Remake",
+      "edition_name": "Resident Evil 4",
       "store_url": "https://store.playstation.com/en-in/product/EP0102-PPSA07412_00-BHB0000000000003",
-      "store_id": "EP0102-PPSA07412_00-BHB0000000000003",
+      "store_id": "EP0102-PPSA07412_00-RE4RMAINGAME0000",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "Call of Duty: Modern Warfare 4",
+      "edition_name": "Call of Duty®: Modern Warfare® 4",
+      "store_url": "https://store.playstation.com/en-in/concept/10001130",
+      "store_id": "EP0002-PPSA07950_00-CODMW4STANDARD01",
+      "platform": "PS5",
+      "target_price": null
+    },
+    {
+      "name": "Minecraft",
+      "edition_name": "Minecraft",
+      "store_url": "https://store.playstation.com/en-in/product/EP4433-CUSA00265_00-MINECRAFTPS40001",
+      "store_id": "UP4433-PPSA17221_00-MINECRAFTPS50000",
+      "platform": "PS5",
       "target_price": null
     }
   ]

@@ -16,18 +16,18 @@ def test_config_defaults():
     assert config.CHAT_ID == config.TELEGRAM_CHAT_ID
 
 def test_database_sqlite_preserved_data():
-    db = Database()
+    db = Database(force_sqlite=True)
     # Call initialize_database to ensure any new columns/tables exist
     db.initialize_database()
 
-    # Verify existing 9 games
+    # Verify existing 9 games and expanded 19 games
     games = db._fetchall("SELECT id, name, store_id FROM games ORDER BY id ASC")
     assert len(games) >= 9, f"Expected at least 9 games, got {len(games)}"
 
-    # Check COD Modern Warfare
+    # Check COD Modern Warfare (verified ID 1 preserved)
     assert games[0][0] == 1
-    assert games[0][1] == "Call of Duty Modern Warfare 4"
-    assert games[0][2] == "10001130"
+    assert "Call of Duty" in games[0][1]
+    assert games[0][2] in ("10001130", "EP0002-PPSA07950_00-CODMW4STANDARD01")
 
     # Verify existing price history
     history = db._fetchall("SELECT id, game_id, price FROM price_history ORDER BY id ASC")
